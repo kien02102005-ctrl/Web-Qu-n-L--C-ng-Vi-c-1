@@ -32,6 +32,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
+        /* ĐÃ SỬA: Đảm bảo HTML & BODY bao phủ 100% toàn màn hình */
         html, body {
             width: 100%;
             min-height: 100vh;
@@ -123,6 +124,7 @@
         }
 
         /* --- 2. GIAO DIỆN CHÍNH (APP MAIN) --- */
+        /* ĐÃ SỬA: Ép mở rộng 100% full chiều rộng màn hình */
         #app-screen {
             display: flex;
             width: 100%;
@@ -189,6 +191,7 @@
             color: #fff;
         }
 
+        /* ĐÃ SỬA: Main Content chiếm trọn phần diện tích còn lại */
         .main-content {
             flex: 1;
             width: calc(100% - 240px);
@@ -1025,6 +1028,12 @@
             }
         ];
 
+        const defaultTasks = [
+            { id: 'T001', name: 'Nghiên cứu tài liệu khoa học', status: 'Đang làm', date: '02/09/2026', priority: 'Cao', files: [] },
+            { id: 'T002', name: 'Chuẩn bị hóa chất phòng thí nghiệm', status: 'Chưa làm', date: '30/09/2026', priority: 'Bình thường', files: [] },
+            { id: 'T003', name: 'Viết báo cáo tổng kết tháng', status: 'Hoàn thành', date: '01/09/2026', priority: 'Thấp', files: [] }
+        ];
+
         function initMonthSelector() {
             const monthSelect = document.getElementById('select-kpi-month');
             if (!monthSelect) return;
@@ -1260,7 +1269,8 @@
                 if (data) {
                     tasks = Object.values(data);
                 } else {
-                    tasks = [];
+                    tasks = defaultTasks.map(t => ({ ...t, user: targetUser }));
+                    saveUserData();
                 }
                 renderDashboard();
                 renderTaskList();
@@ -1408,7 +1418,7 @@
         function handleRegister(e) {
             e.preventDefault();
             const email = document.getElementById('reg-email').value.trim();
-            const username = document.getElementById('reg-username').value.trim();
+            const username = document.getElementById('reg-username').value.trim().toLowerCase();
             const password = document.getElementById('reg-password').value;
             const confirmPassword = document.getElementById('reg-confirm-password').value;
             const kpiType = document.getElementById('reg-kpi-type').value;
@@ -1432,7 +1442,7 @@
 
         function handleLogin(e) {
             e.preventDefault();
-            const usernameInput = document.getElementById('login-username').value.trim();
+            const usernameInput = document.getElementById('login-username').value.trim().toLowerCase();
             const passwordInput = document.getElementById('login-password').value;
 
             const validUser = registeredUsers.find(u => u.username === usernameInput && u.password === passwordInput);
@@ -1613,11 +1623,6 @@
         function renderTaskList() {
             const tbody = document.getElementById('task-table-body');
             tbody.innerHTML = '';
-
-            if (tasks.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #94a3b8; padding: 20px;">Chưa có công việc nào. Bạn có thể thêm mới bằng thanh bên trên.</td></tr>`;
-                return;
-            }
 
             tasks.forEach(t => {
                 const overdue = isTaskOverdue(t.date, t.status);
@@ -1854,12 +1859,12 @@
                             <thead>
                                 <tr>
                                     <th style="width: 50px; text-align: center;">STT</th>
-                                    <th style="width: auto;">Nội dung Đánh giá</th>
-                                    <th style="width: 220px;">Tiêu chí đánh giá</th>
-                                    <th style="width: 90px; text-align: center;">Điểm tối đa</th>
-                                    <th style="width: 90px; text-align: center;">Điểm tự chấm</th>
-                                    <th style="width: 100px; text-align: center; background-color: #f0fdf4; color: #166534;">Điểm Đánh Giá</th>
-                                    ${isAdmin ? `<th style="width: 140px; text-align: center;">Thao tác Admin</th>` : ''}
+                                    <th>Nội dung Đánh giá</th>
+                                    <th style="width: 300px; min-width: 250px;">Nội dung Đánh giá</th>
+                                    <th style="width: 100px; text-align: center;">Điểm tối đa</th>
+                                    <th style="width: 100px; text-align: center;">Điểm tự chấm</th>
+                                    <th style="width: 120px; text-align: center; background-color: #f0fdf4; color: #166534;">Điểm Đánh Giá</th>
+                                    ${isAdmin ? `<th style="width: 160px; text-align: center;">Thao tác Admin</th>` : ''}
                                 </tr>
                             </thead>
                             <tbody id="kpi-tbody-${secKey}"></tbody>
@@ -2163,7 +2168,7 @@
 
             const {
                 Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
-                WidthType, AlignmentType, VerticalAlign, BorderStyle, UnderlineType
+                WidthType, AlignmentType, VerticalAlign, BorderStyle
             } = docx;
 
             const targetUserInfo = registeredUsers.find(u => u.username === kpiTargetUser);
@@ -2183,79 +2188,38 @@
                 }
             });
 
-            // Bảng Quốc hiệu - Tiêu ngữ & Đơn vị
-            const headerTable = new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                borders: {
-                    top: { style: BorderStyle.NONE },
-                    bottom: { style: BorderStyle.NONE },
-                    left: { style: BorderStyle.NONE },
-                    right: { style: BorderStyle.NONE },
-                    insideHorizontal: { style: BorderStyle.NONE },
-                    insideVertical: { style: BorderStyle.NONE }
-                },
-                rows: [
-                    new TableRow({
-                        children: [
-                            new TableCell({
-                                width: { size: 45, type: WidthType.PERCENTAGE },
-                                children: [
-                                    new Paragraph({
-                                        alignment: AlignmentType.CENTER,
-                                        children: [new TextRun({ text: "TRUNG TÂM KSBT BẮC NINH", font: "Times New Roman", size: 22 })]
-                                    }),
-                                    new Paragraph({
-                                        alignment: AlignmentType.CENTER,
-                                        children: [new TextRun({ text: "KHOA HÓA LÝ", bold: true, underline: { type: UnderlineType.SINGLE }, font: "Times New Roman", size: 22 })]
-                                    })
-                                ]
-                            }),
-                            new TableCell({
-                                width: { size: 55, type: WidthType.PERCENTAGE },
-                                children: [
-                                    new Paragraph({
-                                        alignment: AlignmentType.CENTER,
-                                        children: [new TextRun({ text: "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", bold: true, font: "Times New Roman", size: 22 })]
-                                    }),
-                                    new Paragraph({
-                                        alignment: AlignmentType.CENTER,
-                                        children: [new TextRun({ text: "Độc lập - Tự do - Hạnh phúc", bold: true, underline: { type: UnderlineType.SINGLE }, font: "Times New Roman", size: 22 })]
-                                    })
-                                ]
-                            })
-                        ]
-                    })
-                ]
-            });
-
-            // Hàng Tiêu đề Bảng Chấm KPI (Chỉ gồm 4 cột)
             const tableHeaderRow = new TableRow({
                 tableHeader: true,
                 children: [
                     new TableCell({
-                        width: { size: 60, type: WidthType.PERCENTAGE },
+                        width: { size: 8, type: WidthType.PERCENTAGE },
                         verticalAlign: VerticalAlign.CENTER,
-                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Nội Dung đánh giá", bold: true, font: "Times New Roman", size: 22 })] })]
+                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "STT", bold: true, font: "Times New Roman", size: 22 })] })]
                     }),
                     new TableCell({
-                        width: { size: 13, type: WidthType.PERCENTAGE },
+                        width: { size: 56, type: WidthType.PERCENTAGE },
+                        verticalAlign: VerticalAlign.CENTER,
+                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Nội dung Đánh giá", bold: true, font: "Times New Roman", size: 22 })] })]
+                    }),
+                    new TableCell({
+                        width: { size: 12, type: WidthType.PERCENTAGE },
                         verticalAlign: VerticalAlign.CENTER,
                         children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Điểm tối đa", bold: true, font: "Times New Roman", size: 22 })] })]
                     }),
                     new TableCell({
-                        width: { size: 13, type: WidthType.PERCENTAGE },
+                        width: { size: 12, type: WidthType.PERCENTAGE },
                         verticalAlign: VerticalAlign.CENTER,
-                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Điểm tự chấm", bold: true, font: "Times New Roman", size: 22 })] })]
+                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Tự chấm", bold: true, font: "Times New Roman", size: 22 })] })]
                     }),
                     new TableCell({
-                        width: { size: 14, type: WidthType.PERCENTAGE },
+                        width: { size: 12, type: WidthType.PERCENTAGE },
                         verticalAlign: VerticalAlign.CENTER,
-                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Điểm đánh giá", bold: true, font: "Times New Roman", size: 22 })] })]
+                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Đánh giá", bold: true, font: "Times New Roman", size: 22 })] })]
                     })
                 ]
             });
 
-            const kpiTableRows = [tableHeaderRow];
+            const tableRows = [tableHeaderRow];
 
             Object.keys(sectionMaxScores).forEach(secKey => {
                 const secTitle = sectionTitles[secKey] || '';
@@ -2264,8 +2228,8 @@
                 const secRow = new TableRow({
                     children: [
                         new TableCell({
-                            columnSpan: 4,
-                            shading: { fill: "F1F5F9" },
+                            columnSpan: 5,
+                            shading: { fill: "E2E8F0" },
                             children: [
                                 new Paragraph({
                                     children: [
@@ -2281,7 +2245,7 @@
                         })
                     ]
                 });
-                kpiTableRows.push(secRow);
+                tableRows.push(secRow);
 
                 const sectionSubs = kpiDataList.filter(s => s.section === secKey);
 
@@ -2289,94 +2253,47 @@
                     const subRow = new TableRow({
                         children: [
                             new TableCell({
+                                width: { size: 8, type: WidthType.PERCENTAGE },
+                                children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: sub.code, bold: true, font: "Times New Roman", size: 22 })] })]
+                            }),
+                            new TableCell({
                                 columnSpan: 4,
-                                children: [new Paragraph({ children: [new TextRun({ text: `${sub.code}. ${sub.title}`, bold: true, font: "Times New Roman", size: 22 })] })]
+                                children: [new Paragraph({ children: [new TextRun({ text: sub.title, bold: true, font: "Times New Roman", size: 22 })] })]
                             })
                         ]
                     });
-                    kpiTableRows.push(subRow);
+                    tableRows.push(subRow);
 
                     if (sub.items) {
                         sub.items.forEach((item, idx) => {
                             const itemRow = new TableRow({
                                 children: [
                                     new TableCell({
-                                        width: { size: 60, type: WidthType.PERCENTAGE },
-                                        children: [new Paragraph({ children: [new TextRun({ text: `${idx + 1}. ${item.title}`, font: "Times New Roman", size: 22 })] })]
+                                        width: { size: 8, type: WidthType.PERCENTAGE },
+                                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(idx + 1), font: "Times New Roman", size: 22 })] })]
                                     }),
                                     new TableCell({
-                                        width: { size: 13, type: WidthType.PERCENTAGE },
+                                        width: { size: 56, type: WidthType.PERCENTAGE },
+                                        children: [new Paragraph({ children: [new TextRun({ text: item.title, font: "Times New Roman", size: 22 })] })]
+                                    }),
+                                    new TableCell({
+                                        width: { size: 12, type: WidthType.PERCENTAGE },
                                         children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(item.maxScore), bold: true, font: "Times New Roman", size: 22 })] })]
                                     }),
                                     new TableCell({
-                                        width: { size: 13, type: WidthType.PERCENTAGE },
+                                        width: { size: 12, type: WidthType.PERCENTAGE },
                                         children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(item.selfScore), font: "Times New Roman", size: 22 })] })]
                                     }),
                                     new TableCell({
-                                        width: { size: 14, type: WidthType.PERCENTAGE },
+                                        width: { size: 12, type: WidthType.PERCENTAGE },
                                         children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(item.adminScore), font: "Times New Roman", size: 22 })] })]
                                     })
                                 ]
                             });
-                            kpiTableRows.push(itemRow);
+                            tableRows.push(itemRow);
                         });
                     }
                 });
-            });
-
-            // Tổng điểm đánh giá
-            const totalRow = new TableRow({
-                children: [
-                    new TableCell({
-                        width: { size: 60, type: WidthType.PERCENTAGE },
-                        children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: "Tổng điểm đánh giá:", bold: true, font: "Times New Roman", size: 22 })] })]
-                    }),
-                    new TableCell({
-                        width: { size: 13, type: WidthType.PERCENTAGE },
-                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(totalMax.toFixed(1)), bold: true, font: "Times New Roman", size: 22 })] })]
-                    }),
-                    new TableCell({
-                        width: { size: 13, type: WidthType.PERCENTAGE },
-                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(totalSelf.toFixed(1)), bold: true, font: "Times New Roman", size: 22 })] })]
-                    }),
-                    new TableCell({
-                        width: { size: 14, type: WidthType.PERCENTAGE },
-                        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(totalAdmin.toFixed(1)), bold: true, font: "Times New Roman", size: 22 })] })]
-                    })
-                ]
-            });
-            kpiTableRows.push(totalRow);
-
-            // Bảng Ký tên Lãnh đạo Khoa
-            const signatureTable = new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                borders: {
-                    top: { style: BorderStyle.NONE },
-                    bottom: { style: BorderStyle.NONE },
-                    left: { style: BorderStyle.NONE },
-                    right: { style: BorderStyle.NONE },
-                    insideHorizontal: { style: BorderStyle.NONE },
-                    insideVertical: { style: BorderStyle.NONE }
-                },
-                rows: [
-                    new TableRow({
-                        children: [
-                            new TableCell({
-                                width: { size: 50, type: WidthType.PERCENTAGE },
-                                children: [new Paragraph({ text: "" })]
-                            }),
-                            new TableCell({
-                                width: { size: 50, type: WidthType.PERCENTAGE },
-                                children: [
-                                    new Paragraph({
-                                        alignment: AlignmentType.CENTER,
-                                        children: [new TextRun({ text: "XÁC NHẬN CỦA LÃNH ĐẠO KHOA, TRƯỞNG KHOA", bold: true, font: "Times New Roman", size: 22 })]
-                                    })
-                                ]
-                            })
-                        ]
-                    })
-                ]
             });
 
             const monthParts = selectedKpiMonth.split('-');
@@ -2386,48 +2303,41 @@
                 sections: [{
                     properties: {},
                     children: [
-                        headerTable,
-                        new Paragraph({ spacing: { after: 200 }, children: [] }),
                         new Paragraph({
                             alignment: AlignmentType.CENTER,
                             children: [
-                                new TextRun({ text: "BẢNG ĐÁNH GIÁ KPI ", bold: true, font: "Times New Roman", size: 28 }),
-                                new TextRun({ text: monthStr.toUpperCase(), bold: true, font: "Times New Roman", size: 28 })
+                                new TextRun({ text: "BẢNG ĐÁNH GIÁ KẾT QUẢ KPI", bold: true, font: "Times New Roman", size: 28, color: "1E40AF" })
                             ]
                         }),
                         new Paragraph({
                             alignment: AlignmentType.CENTER,
                             spacing: { after: 300 },
                             children: [
-                                new TextRun({ text: `(Loại Bảng: ${kpiTypeName})`, italic: true, font: "Times New Roman", size: 22 })
-                            ]
-                        }),
-                        new Paragraph({
-                            spacing: { after: 100 },
-                            children: [
-                                new TextRun({ text: `Họ và tên cán bộ: `, bold: true, font: "Times New Roman", size: 22 }),
-                                new TextRun({ text: kpiTargetUser, font: "Times New Roman", size: 22 })
-                            ]
-                        }),
-                        new Paragraph({
-                            spacing: { after: 200 },
-                            children: [
-                                new TextRun({ text: `Đơn vị công tác: `, bold: true, font: "Times New Roman", size: 22 }),
-                                new TextRun({ text: "Khoa Hóa Lý - Trung tâm KSBT Bắc Ninh", font: "Times New Roman", size: 22 })
+                                new TextRun({ text: `Cán bộ: ${kpiTargetUser.toUpperCase()} - Loại KPI: ${kpiTypeName} (${monthStr})`, italic: true, font: "Times New Roman", size: 22 })
                             ]
                         }),
                         new Table({
                             width: { size: 100, type: WidthType.PERCENTAGE },
-                            rows: kpiTableRows
+                            rows: tableRows
                         }),
-                        new Paragraph({ spacing: { after: 300 }, children: [] }),
-                        signatureTable
+                        new Paragraph({
+                            spacing: { before: 200 },
+                            children: [
+                                new TextRun({ text: `Tổng điểm tự chấm: ${totalSelf.toFixed(1)} / ${totalMax.toFixed(1)} điểm`, bold: true, font: "Times New Roman", size: 22 }),
+                            ]
+                        }),
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: `Tổng điểm đánh giá chính thức: ${totalAdmin.toFixed(1)} điểm`, bold: true, font: "Times New Roman", size: 22, color: "059669" })
+                            ]
+                        })
                     ]
                 }]
             });
 
-            const blob = await Packer.toBlob(doc);
-            saveAs(blob, `KPI_${kpiTargetUser}_${selectedKpiMonth}.docx`);
+            Packer.toBlob(doc).then(blob => {
+                saveAs(blob, `KPI_${kpiTargetUser}_${selectedKpiMonth}.docx`);
+            });
         }
     </script>
 </body>
